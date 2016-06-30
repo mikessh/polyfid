@@ -1,0 +1,17 @@
+{
+	"project": "polerr73",
+	"references": "meta/refs.fa",
+	"structure": 
+		[
+			{
+				"tabular": 
+				{
+					"file": "meta/index.txt",
+					"positional": 
+						{
+							"mask1": "nnNNNNNNNNNNNN"
+						}
+				}
+			}
+		]
+}
