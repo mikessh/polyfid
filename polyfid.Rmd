@@ -42,6 +42,8 @@ template <- "TGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTTGCGGCGATTTATCG
 Overall error rates
 
 ```{r}
+library(knitr)
+
 df.er <- ddply(df, .(project, name), summarize, 
                mismatches = sum(count.major), umi.count = round(mean(coverage)),
                err.rate = mismatches / umi.count / nchar(template) / mean(cycles),
