@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Load required libraries, load and merge MAGERI results.
 
 ```{r}
-library(plyr); library(ggplot2); library(seqLogo); library(Biostrings); library(reshape2); library(gplots)
+library(plyr); library(ggplot2); library(reshape2); library(gplots)
 
 df.meta <- read.table("metadata.txt", header=T, sep = "\t")
 
