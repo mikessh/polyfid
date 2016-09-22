@@ -12,32 +12,57 @@ Load required libraries, load and merge MAGERI results.
 ```{r}
 library(plyr); library(ggplot2); library(reshape2); library(gplots)
 
+load_variant_table <- function(path, project, sample) {
+  fname <- paste(path, paste(project, sample, "variant.caller.txt", sep ="."), sep = "/")
+  df.1 <- read.table(fname, header=T, sep="\t")
+  df.1$project <- project
+  df.1$sample <- sample
+  df.1
+}
+
+# mutation signatures
+sign.rep <- data.frame(mutation.signature = c("A>C","A>G","A>T","C>A","C>G","C>T","G>A","G>C","G>T","T>A","T>C","T>G"),
+                       mutation.signature.rep = c("A>C,T>G","A>G,T>C","A>T,T>A","C>A,G>T","C>G,G>C","C>T,G>A","C>T,G>A","C>G,G>C","C>A,G>T","A>T,T>A","A>G,T>C","A>C,T>G"))
+
 read_data <- function(path) {
   df.meta <- read.table(paste(path, "metadata.txt", sep="/"), header=T, sep = "\t")
 
+  # load and concatenate all samples
   df <- data.frame()
   
-  for (project in unique(df.meta$project)) {
-    for (sample in unique(df.meta$sample)) {
-      fname <- paste(path, paste(project, sample, "variant.caller.txt", sep ="."), sep = "/")
-      if (file.exists(fname)) {
-        df.1 <- read.table(fname, header=T, sep="\t")
-        df.1$project <- project
-        df.1$sample <- sample
-        df <- rbind(df, df.1)
-      }
-    }
+  for (i in 1:nrow(df.meta)) {
+    df <- rbind(df, load_variant_table(path, df.meta$project[i], df.meta$sample[i]))
   }
   
+  # append metadata
   df <- merge(df, df.meta, all.x=T, all.y=F)
+  
+  # split mutation signature
+  df$mut.split <- sapply(df$mutation, function(x) strsplit(as.character(x),"[S:>]"))
+  df$mutation.pos <- as.integer(sapply(df$mut.split, function(x) x[2]))
+  df$mutation.from <- sapply(df$mut.split, function(x) x[3])
+  df$mutation.to <- sapply(df$mut.split, function(x) x[4])
+  df$mut.split  <- NULL
+  
+  # mutation signature groups
+  df$mutation.signature <- paste(df$mutation.from, df$mutation.to, sep =">")
+  df <- merge(df, sign.rep, all.x=T, all.y=F)
+  
+  # exclude bases that are not in reference
+  df <- subset(df, !(mutation.pos %in% 22:25))
+  
+  # shift back mutations
+  df$mutation.pos <- ifelse(df$mutation.pos > 25, df$mutation.pos - 4, df$mutation.pos)
+  
+  df$mutation <- with(df, paste("S", mutation.pos, ":", mutation.from, ">", mutation.to, sep=""))
+  
+  df
 }
 
 df <- read_data("polerr2016")
-df <- subset(df, count.major / coverage < 0.5)
-df.1 <- df
 df.linpcr <- read_data("polerr73-82")
 
-template <- "TGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTTGCGGCGATTTATCGTCGTCATCGTGGCGGCAGCGTGACCTATGTGTGCGGCGGCAGCCTGATTAGCCCGTGCTGG"
+template <- "TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTTGCGGCGATTTATCGTCGTCATCGTGGCGGCAGCGTGACCTATGTGTGCGGCGGCAGCCTGATTAGCCCGTGCTGG"
 ```
 
 ## Estimating the error rates
@@ -126,26 +151,9 @@ df <- ddply(df, .(name, mutation), summarize, count.major = sum(count.major))
 df <- merge(df, df.coverage.summary, by = "name")
 ```
 
-Parse mutation signatures (needed for further analysis)
-
-```{r}
-df$mut.split <- sapply(df$mutation, function(x) strsplit(as.character(x),"[S:>]"))
-df$mutation.pos <- as.integer(sapply(df$mut.split, function(x) x[2]))
-df$mutation.from <- sapply(df$mut.split, function(x) x[3])
-df$mutation.to <- sapply(df$mut.split, function(x) x[4])
-df$mut.split  <- NULL
-```
-
 Substitution signature preferences
 
 ```{r}
-df$mutation.signature <- paste(df$mutation.from, df$mutation.to, sep =">")
-
-sign.rep <- data.frame(mutation.signature = c("A>C","A>G","A>T","C>A","C>G","C>T","G>A","G>C","G>T","T>A","T>C","T>G"),
-                       mutation.signature.rep = c("A>C,T>G","A>G,T>C","A>T,T>A","C>A,G>T","C>G,G>C","C>T,G>A","C>T,G>A","C>G,G>C","C>A,G>T","A>T,T>A","A>G,T>C","A>C,T>G"))
-
-df <- merge(df, sign.rep, all.x=T, all.y=F)
-
 df.pattern <- ddply(df, .(name, mutation.signature.rep), summarize, count.sum = sum(count.major))
 df.pattern <- ddply(df.pattern, .(name), transform, freq = count.sum / sum(count.sum))
 

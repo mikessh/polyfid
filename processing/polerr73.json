@@ -1,0 +1,90 @@
+{
+  "project": "polerr73",
+  "references": "metadata/refs.fa",
+  "structure": [
+    {
+     "byindex": [
+	   {
+         "index": "encyclo",
+         "r1": "P73_2_CGATGT_L002_R1_001.fastq",
+         "r2": "P73_2_CGATGT_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntcag"
+         }
+       },
+	   {
+         "index": "velox",
+         "r1": "P73_4_TGACCA_L002_R1_001.fastq",
+         "r2": "P73_4_TGACCA_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnngcaa"
+         }
+       },
+	   {
+         "index": "tersus",
+         "r1": "P73_5_ACAGTG_L002_R1_001.fastq",
+         "r2": "P73_5_ACAGTG_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnnatgc"
+         }
+       },
+	   {
+         "index": "tersus-snp-buff",
+         "r1": "P73_6_GCCAAT_L002_R1_001.fastq",
+         "r2": "P73_6_GCCAAT_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnncaag"
+         }
+       },
+	   {
+         "index": "snp-detect",
+         "r1": "P73_7_CAGATC_L002_R1_001.fastq",
+         "r2": "P73_7_CAGATC_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnnctca"
+         }
+       },
+	   {
+         "index": "sd-hs",
+         "r1": "P73_8_ACTTGA_L002_R1_001.fastq",
+         "r2": "P73_8_ACTTGA_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnnactg"
+         }
+       },
+	   {
+         "index": "kappa-hf-taq",
+         "r1": "P73_9_GATCAG_L002_R1_001.fastq",
+         "r2": "P73_9_GATCAG_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntatc"
+         }
+       },
+       {
+         "index": "phusion",
+         "r1": "P73_10_TAGCTT_L002_R1_001.fastq",
+         "r2": "P73_10_TAGCTT_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnngaac"
+         }
+       },
+	   {
+         "index": "truseq",
+         "r1": "P73_11_GGCTAC_L002_R1_001.fastq",
+         "r2": "P73_11_GGCTAC_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntact"
+         }
+       },
+	   {
+         "index": "taq-hs",
+         "r1": "P73_12_CTTGTA_L002_R1_001.fastq",
+         "r2": "P73_12_CTTGTA_L002_R2_001.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntgac"
+         }
+       }
+     ]
+    }
+  ]
+}
