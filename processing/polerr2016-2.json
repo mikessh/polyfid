@@ -1,0 +1,90 @@
+{
+  "project": "polerr2016-2",
+  "references": "metadata/refs.fa",
+  "structure": [
+    {
+     "byindex": [
+	   {
+         "index": "encyclo",
+         "r1": "15_ATGTCA_all_R1.fastq",
+         "r2": "15_ATGTCA_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntcag"
+         }
+       },
+	   {
+         "index": "velox",
+         "r1": "16_CCGTCC_all_R1.fastq",
+         "r2": "16_CCGTCC_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnngcaa"
+         }
+       },
+	   {
+         "index": "tersus-snp-buff",
+         "r1": "19_GTGAAA_all_R1.fastq",
+         "r2": "19_GTGAAA_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnncaag"
+         }
+       },
+       {
+         "index": "tersus",
+         "r1": "23_GAGTGG_all_R1.fastq",
+         "r2": "23_GAGTGG_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnnatgc"
+         }
+       },
+	   {
+         "index": "snp-detect",
+         "r1": "18_GTCCGC_all_R1.fastq",
+         "r2": "18_GTCCGC_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnnctca"
+         }
+       },
+	   {
+         "index": "sd-hs",
+         "r1": "20_GTGGCC_all_R1.fastq",
+         "r2": "20_GTGGCC_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnnactg"
+         }
+       },
+	   {
+         "index": "kappa-hf-taq",
+         "r1": "21_GTTTCG_all_R1.fastq",
+         "r2": "21_GTTTCG_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntatc"
+         }
+       },
+       {
+         "index": "phusion",
+         "r1": "22_CGTACG_all_R1.fastq",
+         "r2": "22_CGTACG_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnngaac"
+         }
+       },
+	   {
+         "index": "truseq",
+         "r1": "23_GAGTGG_all_R1.fastq",
+         "r2": "23_GAGTGG_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntact"
+         }
+       },
+	   {
+         "index": "taq-hs",
+         "r1": "14_AGTTCC_all_R1.fastq",
+         "r2": "14_AGTTCC_all_R2.fastq",
+         "positional": {
+          "mask1": "nnNNNNNNNNNNNNnnnnnnnnnnnnnnnnnnnnnntgac"
+         }
+       }
+     ]
+    }
+  ]
+}

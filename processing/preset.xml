@@ -13,7 +13,7 @@
   <PreprocessorParameters>
     <umiQualThreshold>10</umiQualThreshold>
     <goodQualityThreshold>30</goodQualityThreshold>
-    <trimAdapters>true</trimAdapters>
+    <trimAdapters>false</trimAdapters>
     <minUmiMismatchRatio>20.0</minUmiMismatchRatio>
     <forceOverseq>true</forceOverseq>
     <defaultOverseq>5</defaultOverseq>
@@ -41,4 +41,3 @@
     <coverageThreshold>100</coverageThreshold>
   </VariantCallerParameters>
 </MageriPresets>
-

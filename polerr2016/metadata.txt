@@ -1,0 +1,21 @@
+project	sample	name	cycles	cycles_2
+polerr2016-1	encyclo	Encyclo	20	22
+polerr2016-1	velox	Velox	20	22
+polerr2016-1	tersus	Tersus	20	24
+polerr2016-1	tersus-snp-buff	Tersus-SNP-buffer	20	22
+polerr2016-1	snp-detect	SNP-detect	20	25
+polerr2016-1	sd-hs	SD-HS	20	24
+polerr2016-1	kappa-hf-taq	Kappa HF	20	25
+polerr2016-1	phusion	Phusion	25	29
+polerr2016-1	truseq	TruSeq	20	25
+polerr2016-1	taq-hs	Taq-HS	20	25
+polerr2016-2	taq-hs	Taq-HS	20	25
+polerr2016-2	encyclo	Encyclo	20	22
+polerr2016-2	velox	Velox	20	23
+polerr2016-2	snp-detect	SNP-detect	20	24
+polerr2016-2	tersus	Tersus	20	25
+polerr2016-2	sd-hs	SD-HS	20	22
+polerr2016-2	kappa-hf-taq	Kappa HF	20	22
+polerr2016-2	phusion	Phusion	25	29
+polerr2016-2	tersus-snp-buff	Tersus-SNP-buffer	20	22
+polerr2016-2	truseq	TruSeq	20	25
