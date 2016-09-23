@@ -138,7 +138,7 @@ ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) +
   theme_bw()
 ```
 
-## Error substitution patterns
+## Patterns and recurrent errors
 
 Combine error rates from Polerr2016 replicas, summarize it by substitution type and polymerase.
 
@@ -151,7 +151,7 @@ df <- ddply(df, .(name, mutation), summarize, count.major = sum(count.major))
 df <- merge(df, df.coverage.summary, by = "name")
 ```
 
-Substitution signature preferences
+Substitution signature preferences:
 
 ```{r}
 df.pattern <- ddply(df, .(name, mutation.signature.rep), summarize, count.sum = sum(count.major))
@@ -161,13 +161,25 @@ ggplot(df.pattern, aes(x = mutation.signature.rep, weight = freq,
                fill = name)) + geom_bar(position = position_dodge()) +
   xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
   scale_fill_brewer(palette = "Paired") + theme_bw()
+
+# same for linpcr
+
+df.pattern.linpcr <- ddply(df.linpcr, .(name, mutation.signature.rep), summarize, count.sum = sum(count.major))
+df.pattern.linpcr <- ddply(df.pattern.linpcr, .(name), transform, freq = count.sum / sum(count.sum))
+
+ggplot(df.pattern.linpcr, aes(x = mutation.signature.rep, weight = freq, 
+               fill = name)) + geom_bar(position = position_dodge()) +
+  xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
+  scale_fill_brewer(palette = "Paired") + theme_bw()
 ```
+
+Clustering of polymerase error profiles:
 
 ```{r}
 library(RColorBrewer)
-df.1$freq <- df.1$count.major / df.1$coverage
-df.1$name_proj <- paste(df.1$name, ifelse(df.1$project == "polerr2016-1", "1", "2"), sep="-")
-mat.profile <- dcast(df.1, name_proj ~ mutation, value.var = "freq")
+df$freq <- df$count.major / df$coverage
+df$name_proj <- paste(df$name, ifelse(df$project == "polerr2016-1", "1", "2"), sep="-")
+mat.profile <- dcast(df, name_proj ~ mutation, value.var = "freq")
 rownames(mat.profile) <- mat.profile[,1]
 mat.profile[,1] <- NULL
 mat.profile <- t(as.matrix(mat.profile))
@@ -193,78 +205,7 @@ heatmap.2(log10(mat.profile), col=c("#67001f", colorpanel(99, "#b2182b", "#f7f7f
           density.info = "none", trace="none")
 ```
 
-Transitions and transversions:
-
-```{r}
-
-```
-
-This goes to supplementary. Clear preference of substitution patters for different polymerases, but no strong position-related trend.
-
-```{r}
-ggplot(df, aes(x = mutation.pos, weight = count.major / coverage, fill = mutation.from)) + 
-  geom_histogram(bins = nchar(template)) + scale_fill_brewer("Substituted base", palette = "Set1") +
-  xlab("Position on template") + ylab("Error rate") +
-  facet_wrap(~name) + theme_bw()
-
-a <- aov(count.major / coverage ~ mutation.pos + mutation.from, df)
-summary(a)
-```
-
-Same for linear PCR.
-
-```{r}
-df.coverage.summary <- ddply(df.linpcr, .(name, project), summarize, coverage = mean(coverage))
-df.coverage.summary <- ddply(df.coverage.summary, .(name), summarize, coverage = sum(coverage))
-
-df.linpcr <- ddply(df.linpcr, .(name, mutation), summarize, count.major = sum(count.major))
-
-df.linpcr <- merge(df.linpcr, df.coverage.summary, by = "name")
-
-df.linpcr$mut.split <- sapply(df.linpcr$mutation, function(x) strsplit(as.character(x),"[S:>]"))
-df.linpcr$mutation.pos <- as.integer(sapply(df.linpcr$mut.split, function(x) x[2]))
-df.linpcr$mutation.from <- sapply(df.linpcr$mut.split, function(x) x[3])
-df.linpcr$mutation.to <- sapply(df.linpcr$mut.split, function(x) x[4])
-df.linpcr$mut.split  <- NULL
-
-df.linpcr$mutation.signature <- paste(df.linpcr$mutation.from, df.linpcr$mutation.to, sep =">")
-
-sign.rep <- data.frame(mutation.signature = c("A>C","A>G","A>T","C>A","C>G","C>T","G>A","G>C","G>T","T>A","T>C","T>G"),
-                       mutation.signature.rep = c("A>C,T>G","A>G,T>C","A>T,T>A","C>A,G>T","C>G,G>C","C>T,G>A","C>T,G>A","C>G,G>C","C>A,G>T","A>T,T>A","A>G,T>C","A>C,T>G"))
-
-df.linpcr <- merge(df.linpcr, sign.rep, all.x=T, all.y=F)
-
-df.pattern <- ddply(df.linpcr, .(name, mutation.signature.rep), summarize, count.sum = sum(count.major))
-df.pattern <- ddply(df.pattern, .(name), transform, freq = count.sum / sum(count.sum))
-
-ggplot(df.pattern, aes(x = mutation.signature.rep, weight = freq, 
-               fill = name)) + geom_bar(position = position_dodge()) +
-  xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
-  scale_fill_brewer(palette = "Paired") + theme_bw()
-
-
-df.pattern.mat <- dcast(df.pattern, name ~ mutation.signature.rep, value.var = "freq")
-rownames(df.pattern.mat) <- df.pattern.mat$name
-df.pattern.mat$name <- NULL
-
-df.pattern.mat <- as.matrix(df.pattern.mat)
-df.pattern.mat[is.na(df.pattern.mat)] <- 0
-
-heatmap.2(df.pattern.mat, col=colorpanel(100, "#b2182b", "#f7f7f7", "#2166ac"),
-          dendrogram = "row", Colv=F,
-          density.info = "none", trace="none")
-
-x.ti <- rowSums(df.pattern.mat[,c("A>G,T>C","C>T,G>A")])
-x.tv <- rowSums(df.pattern.mat) - x.ti
-
-df.trans <- as.data.frame(cbind(x.ti, x.tv))
-df.trans$titv <- df.trans$x.ti / df.trans$x.tv
-colnames(df.trans) <- c("transitions", "transversions", "Ti/Tv")
-
-kable(df.trans)
-```
-
-## Recurrent errors
+Recurrent errors
 
 ```{r}
 df.1x <- ddply(subset(df.1, project == "polerr2016-1"), .(name, mutation), summarize,
@@ -291,8 +232,6 @@ ggplot() +
   scale_y_log10("Frequency in experiment 2", limits=c(1e-6,1e-2)) + 
   theme_bw()
 ```
-
-## Error hotspot context pattern
 
 Frequency distribution of individual mutations, grouped by their pattern.
 
@@ -330,7 +269,16 @@ ggplot(df.q, aes(x=qual.threshold, color=pattern, y=value)) +
   scale_color_brewer(palette = "Paired") + theme_bw()
 ```
 
-## UMI coverage
+## Supplementary data
+
+Error distribution by position
+
+```{r}
+ggplot(df, aes(x = mutation.pos, weight = count.major / coverage, fill = mutation.from)) + 
+  geom_histogram(bins = nchar(template)) + scale_fill_brewer("Substituted base", palette = "Set1") +
+  xlab("Position on template") + ylab("Error rate") +
+  facet_wrap(~name) + theme_bw()
+```
 
 UMI coverage histogram
 
@@ -380,7 +328,6 @@ ggplot()+
 geom_label(aes(x = 22, y = 12, label = lbl), hjust=-0.1, parse = TRUE)+
 stat_smooth(data=df.o, aes(cycles_2, peak), method=lm, color="black", fill="grey80") + 
 geom_jitter(data=df.o, aes(cycles_2, peak, fill=name), size=3, width=0.3, height=0.3, color="black", shape=21) +
-#geom_text(aes(cycles_2,peak,label=name, vjust=1, hjust = .3)) +
 scale_x_continuous(name="2nd PCR cycles", breaks=10:30) +
 scale_y_continuous(expression('log'[2]~'characteristic MIG size'), breaks=2:20) +
 scale_fill_brewer(name  ="Polymerase", palette = "Paired") +
