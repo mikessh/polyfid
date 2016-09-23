@@ -62,7 +62,7 @@ read_data <- function(path) {
 df <- read_data("polerr2016")
 df.linpcr <- read_data("polerr73-82")
 
-template <- "TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTTGCGGCGATTTATCGTCGTCATCGTGGCGGCAGCGTGACCTATGTGTGCGGCGGCAGCCTGATTAGCCCGTGCTGG"
+template <- "TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTTGCGGCGATTTATCGTCGTCATCGTGGCGGCAGCGTGACCTATGTGTGCGGCGGCAGCCTGATTAGCCCGTGCTGG" # 4 index bases removed
 ```
 
 ## Estimating the error rates
@@ -108,48 +108,7 @@ kable(df.er)
 write.table(df.er, file="er.txt", quote=F, sep="\t", row.names = F)
 ```
 
-Error rate consistency between two independent experimental replicas from Polerr2016 dataset.
-
-```{r}
-df.er.cast <- dcast(df.er, name ~ project, 
-                    value.var = "err.rate.corr")
-df.er.cast2 <- dcast(df.er, name ~ project, 
-                    value.var = "delta")
-
-df.er.cast <- merge(df.er.cast, df.er.cast2, by = "name")
-colnames(df.er.cast) <- c("name", "replica1.x", "replica2.x", "replica1.y", "replica2.y")
-
-m <- lm(replica1.x ~ replica2.x, df.er.cast);
-eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(R)~"="~r,
-     list(a = format(coef(m)[1], digits = 2),
-          b = format(coef(m)[2], digits = 2),
-          r = format(sqrt(summary(m)$r.squared), digits = 2)))
-lbl<-as.character(as.expression(eq))
-
-ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) + 
-  geom_errorbarh(aes(xmax=replica1.x+1.96*replica1.y,xmin=replica1.x-1.96*replica1.y)) +
-  geom_errorbar(aes(ymax=replica2.x+1.96*replica2.y,ymin=replica2.x-1.96*replica2.y)) +
-  geom_smooth(method = "lm", color="black", fill="grey80", fullrange = T) + 
-  geom_point(size=2, shape=21, fill="grey70") + 
-  geom_text(aes(label=name), vjust=1, hjust = .3, color="red") + 
-  geom_label(aes(x = 1e-6, y = 8e-5, label = lbl), hjust=-0.1, parse = TRUE)+
-  scale_x_log10(name="Error rate in experiment 1, 1/bp/cycle", limits=c(1e-6,1e-4)) + 
-  scale_y_log10(name="Error rate in experiment 2, 1/bp/cycle", limits=c(1e-6,1e-4)) +  
-  theme_bw()
-```
-
 ## Patterns and recurrent errors
-
-Combine error rates from Polerr2016 replicas, summarize it by substitution type and polymerase.
-
-```{r}
-df.coverage.summary <- ddply(df, .(name, project), summarize, coverage = mean(coverage))
-df.coverage.summary <- ddply(df.coverage.summary, .(name), summarize, coverage = sum(coverage))
-
-df <- ddply(df, .(name, mutation), summarize, count.major = sum(count.major))
-
-df <- merge(df, df.coverage.summary, by = "name")
-```
 
 Substitution signature preferences:
 
@@ -208,10 +167,10 @@ heatmap.2(log10(mat.profile), col=c("#67001f", colorpanel(99, "#b2182b", "#f7f7f
 Recurrent errors
 
 ```{r}
-df.1x <- ddply(subset(df.1, project == "polerr2016-1"), .(name, mutation), summarize,
+df.1x <- ddply(subset(df, project == "polerr2016-1"), .(name, mutation), summarize,
                freq = count.major / coverage, coverage = coverage)
 
-df.1y <- ddply(subset(df.1, project == "polerr2016-2"), .(name, mutation), summarize,
+df.1y <- ddply(subset(df, project == "polerr2016-2"), .(name, mutation), summarize,
                freq = count.major / coverage, coverage = coverage)
 
 df.1 <- merge(df.1x, df.1y, by=c("name","mutation"), all = T)
@@ -271,13 +230,48 @@ ggplot(df.q, aes(x=qual.threshold, color=pattern, y=value)) +
 
 ## Supplementary data
 
+Error rate consistency between two independent experimental replicas from Polerr2016 dataset.
+
+```{r}
+df.er.cast <- dcast(df.er, name ~ project, 
+                    value.var = "err.rate.corr")
+df.er.cast2 <- dcast(df.er, name ~ project, 
+                    value.var = "delta")
+
+df.er.cast <- merge(df.er.cast, df.er.cast2, by = "name")
+colnames(df.er.cast) <- c("name", "replica1.x", "replica2.x", "replica1.y", "replica2.y")
+
+m <- lm(replica1.x ~ replica2.x, df.er.cast);
+eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(R)~"="~r,
+     list(a = format(coef(m)[1], digits = 2),
+          b = format(coef(m)[2], digits = 2),
+          r = format(sqrt(summary(m)$r.squared), digits = 2)))
+lbl<-as.character(as.expression(eq))
+
+ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) + 
+  geom_errorbarh(aes(xmax=replica1.x+1.96*replica1.y,xmin=replica1.x-1.96*replica1.y)) +
+  geom_errorbar(aes(ymax=replica2.x+1.96*replica2.y,ymin=replica2.x-1.96*replica2.y)) +
+  geom_smooth(method = "lm", color="black", fill="grey80", fullrange = T) + 
+  geom_point(size=2, shape=21, fill="grey70") + 
+  geom_text(aes(label=name), vjust=1, hjust = .3, color="red") + 
+  geom_label(aes(x = 1e-6, y = 8e-5, label = lbl), hjust=-0.1, parse = TRUE)+
+  scale_x_log10(name="Error rate in experiment 1, 1/bp/cycle", limits=c(1e-6,1e-4)) + 
+  scale_y_log10(name="Error rate in experiment 2, 1/bp/cycle", limits=c(1e-6,1e-4)) +  
+  theme_bw()
+```
+
 Error distribution by position
 
 ```{r}
-ggplot(df, aes(x = mutation.pos, weight = count.major / coverage, fill = mutation.from)) + 
-  geom_histogram(bins = nchar(template)) + scale_fill_brewer("Substituted base", palette = "Set1") +
-  xlab("Position on template") + ylab("Error rate") +
-  facet_wrap(~name) + theme_bw()
+df.pos <- ddply(df, .(name, mutation.pos, mutation.from, mutation.signature.rep), 
+                summarize, count = sum(count.major), freq = sum(count.major) / coverage[1])
+
+ggplot(df.pos, aes(x = mutation.pos, y = freq, color = mutation.signature.rep)) + 
+  geom_line() + geom_point(shape=21, fill="white") + 
+  scale_color_brewer("Substituted base", palette = "Paired") +
+  xlab("Position on template") + scale_y_log10("Error rate") +
+  facet_grid(name~mutation.signature.rep, scales="free_y") +
+  theme_bw()
 ```
 
 UMI coverage histogram
@@ -298,7 +292,6 @@ for (proj in unique(df.meta$project)) {
                                    name=name, project=proj, cycles_2=cycles_2))
   }
 }
-
 
 ggplot(df.h) + 
   geom_rect(aes(xmin=1, xmax=5, ymin=0, ymax=Inf), fill="grey") +
