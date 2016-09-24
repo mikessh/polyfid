@@ -1,2 +1,0 @@
-#pipeline_block
-reference	mutation	count.major	count.minor	coverage	score	cqs	error.rate	has.reference	ancestral.allele

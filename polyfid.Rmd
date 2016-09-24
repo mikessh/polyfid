@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Load required libraries, load and merge MAGERI results.
 
 ```{r}
-library(plyr); library(ggplot2); library(reshape2); library(gplots)
+library(plyr); library(ggplot2); library(reshape2); library(gplots); library(knitr); library(RColorBrewer)
 
 load_variant_table <- function(path, project, sample) {
   fname <- paste(path, paste(project, sample, "variant.caller.txt", sep ="."), sep = "/")
@@ -24,43 +24,40 @@ load_variant_table <- function(path, project, sample) {
 sign.rep <- data.frame(mutation.signature = c("A>C","A>G","A>T","C>A","C>G","C>T","G>A","G>C","G>T","T>A","T>C","T>G"),
                        mutation.signature.rep = c("A>C,T>G","A>G,T>C","A>T,T>A","C>A,G>T","C>G,G>C","C>T,G>A","C>T,G>A","C>G,G>C","C>A,G>T","A>T,T>A","A>G,T>C","A>C,T>G"))
 
-read_data <- function(path) {
-  df.meta <- read.table(paste(path, "metadata.txt", sep="/"), header=T, sep = "\t")
+path <- "data/"
+df.meta <- read.table(paste(path, "metadata.txt", sep="/"), header=T, sep = "\t")
 
-  # load and concatenate all samples
-  df <- data.frame()
-  
-  for (i in 1:nrow(df.meta)) {
-    df <- rbind(df, load_variant_table(path, df.meta$project[i], df.meta$sample[i]))
-  }
-  
-  # append metadata
-  df <- merge(df, df.meta, all.x=T, all.y=F)
-  
-  # split mutation signature
-  df$mut.split <- sapply(df$mutation, function(x) strsplit(as.character(x),"[S:>]"))
-  df$mutation.pos <- as.integer(sapply(df$mut.split, function(x) x[2]))
-  df$mutation.from <- sapply(df$mut.split, function(x) x[3])
-  df$mutation.to <- sapply(df$mut.split, function(x) x[4])
-  df$mut.split  <- NULL
-  
-  # mutation signature groups
-  df$mutation.signature <- paste(df$mutation.from, df$mutation.to, sep =">")
-  df <- merge(df, sign.rep, all.x=T, all.y=F)
-  
-  # exclude bases that are not in reference
-  df <- subset(df, !(mutation.pos %in% 22:25))
-  
-  # shift back mutations
-  df$mutation.pos <- ifelse(df$mutation.pos > 25, df$mutation.pos - 4, df$mutation.pos)
-  
-  df$mutation <- with(df, paste("S", mutation.pos, ":", mutation.from, ">", mutation.to, sep=""))
-  
-  df
+# load and concatenate all samples
+df.0 <- data.frame()
+
+for (i in 1:nrow(df.meta)) {
+  df.0 <- rbind(df.0, load_variant_table(path, df.meta$project[i], df.meta$sample[i]))
 }
 
-df <- read_data("polerr2016")
-df.linpcr <- read_data("polerr73-82")
+# append metadata
+df.0 <- merge(df.0, df.meta, all.x=T, all.y=F)
+
+# split mutation signature
+df.0$mut.split <- sapply(df.0$mutation, function(x) strsplit(as.character(x),"[S:>]"))
+df.0$mutation.pos <- as.integer(sapply(df.0$mut.split, function(x) x[2]))
+df.0$mutation.from <- sapply(df.0$mut.split, function(x) x[3])
+df.0$mutation.to <- sapply(df.0$mut.split, function(x) x[4])
+df.0$mut.split  <- NULL
+
+# mutation signature groups
+df.0$mutation.signature <- paste(df.0$mutation.from, df.0$mutation.to, sep =">")
+df.0 <- merge(df.0, sign.rep, all.x=T, all.y=F)
+
+# exclude bases that are not in reference
+df.0 <- subset(df.0, !(mutation.pos %in% 22:25))
+
+# shift back mutations
+df.0$mutation.pos <- ifelse(df.0$mutation.pos > 25, df.0$mutation.pos - 4, df.0$mutation.pos)
+
+df.0$mutation <- with(df.0, paste("S", mutation.pos, ":", mutation.from, ">", mutation.to, sep=""))
+  
+df <- subset(df.0, project %in% c("polerr2016-1", "polerr2016-2"))
+df.linpcr <- subset(df.0, project %in% c("polerr73", "polerr82"))
 
 template <- "TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTTGCGGCGATTTATCGTCGTCATCGTGGCGGCAGCGTGACCTATGTGTGCGGCGGCAGCCTGATTAGCCCGTGCTGG" # 4 index bases removed
 ```
@@ -70,8 +67,6 @@ template <- "TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGC
 In this section we compute linear PCR error rate from Proj73/82 and error rate in conventional PCR from Polerr2016 project. Note that the linear PCR error rate is substantially higher than rate per cycle of conentional PCR. For some cases, e.g. Phusion it accounts for ~1/2 of errors observed in Polerr2016.
 
 ```{r}
-library(knitr)
-
 # Compute linear PCR error rate
 
 df.er.linpcr <- ddply(df.linpcr, .(project, name), summarize, mismatches = sum(count.major), umi.count = mean(coverage))
@@ -123,10 +118,10 @@ ggplot(df.pattern, aes(x = mutation.signature.rep, weight = freq,
 
 # same for linpcr
 
-df.pattern.linpcr <- ddply(df.linpcr, .(name, mutation.signature.rep), summarize, count.sum = sum(count.major))
+df.pattern.linpcr <- ddply(df.linpcr, .(name, mutation.signature), summarize, count.sum = sum(count.major))
 df.pattern.linpcr <- ddply(df.pattern.linpcr, .(name), transform, freq = count.sum / sum(count.sum))
 
-ggplot(df.pattern.linpcr, aes(x = mutation.signature.rep, weight = freq, 
+ggplot(df.pattern.linpcr, aes(x = mutation.signature, weight = freq, 
                fill = name)) + geom_bar(position = position_dodge()) +
   xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
   scale_fill_brewer(palette = "Paired") + theme_bw()
@@ -135,7 +130,6 @@ ggplot(df.pattern.linpcr, aes(x = mutation.signature.rep, weight = freq,
 Clustering of polymerase error profiles:
 
 ```{r}
-library(RColorBrewer)
 df$freq <- df$count.major / df$coverage
 df$name_proj <- paste(df$name, ifelse(df$project == "polerr2016-1", "1", "2"), sep="-")
 mat.profile <- dcast(df, name_proj ~ mutation, value.var = "freq")
@@ -212,20 +206,28 @@ ggplot(df) +
 ## Sequence quality and error patterns
 
 ```{r}
-df.q <- read.table("polerr73-82/mmqc.txt", header=T,sep="\t")
-library(reshape2)
+df.q <- read.table("data/mmqc.txt", header=T,sep="\t")
 df.q <- melt(df.q, id.vars = "qual.threshold")
+df.q$variable <- as.factor(gsub(".", ">", df.q$variable, fixed = T))
+colnames(df.q) <- c("qual.threshold", "mutation.signature", "freq")
 
-df.q <- merge(df.q, 
-              data.frame(variable = unlist(strsplit("A.C;T.G;A.G;T.C;A.T;T.A;C.A;G.T;C.G;G.C;C.T;G.A", ";")),
-                         pattern = unlist(strsplit("A>C,T>G;A>C,T>G;A>G,T>C;A>G,T>C;A>T,T>A;A>T,T>A;C>A,G>T;C>A,G>T;C>G,G>C;C>G,G>C;C>T,G>A;C>T,G>A", ";"))
-), by = "variable")
-
-df.q <-ddply(df.q, .(qual.threshold, pattern), summarize, value=sum(value))
-
-ggplot(df.q, aes(x=qual.threshold, color=pattern, y=value)) + 
+# Error profiles for different quality threhsolds
+ggplot(df.q, aes(x=qual.threshold, color=mutation.signature, y=freq)) + 
   geom_smooth() + geom_point() + scale_y_log10() +
   scale_color_brewer(palette = "Paired") + theme_bw()
+
+# Correlation between error profiles
+
+df.linpcrT <- ddply(df.linpcr, .(mutation.signature, name), summarize, freq = sum(count.major) / sum(coverage))
+df.q_truseq <- merge(df.q, df.linpcrT, by = c("mutation.signature"), all.x=T)
+df.q_truseq$freq.y[is.na(df.q_truseq$freq.y)] <- 0
+
+df.q_truseq <- ddply(df.q_truseq, .(qual.threshold, name), summarize, R = cor(freq.x, freq.y))
+
+ggplot(df.q_truseq, aes(x=qual.threshold, y=R, color=name)) + 
+  geom_line() + geom_point(shape=21) + scale_color_brewer("Sample", palette = "Paired") +
+  scale_y_continuous("Pearson correlation", limits=c(-1,1)) + xlab("Quality threshold, Phred") +
+  theme_bw()
 ```
 
 ## Supplementary data
@@ -277,7 +279,7 @@ ggplot(df.pos, aes(x = mutation.pos, y = freq, color = mutation.signature.rep)) 
 UMI coverage histogram
 
 ```{r}
-df.meta <- read.table(paste("polerr2016", "metadata.txt", sep="/"), header=T, sep = "\t")
+df.meta <- subset(df.meta, project %in% c("polerr2016-1", "polerr2016-2"))
 
 df.h <- data.frame(mig.size.bin = integer(), read.count = integer(), name=character(), project=character())
 
@@ -286,7 +288,7 @@ for (proj in unique(df.meta$project)) {
     mask <- which(df.meta$sample == sample & df.meta$project == proj)
     name <- df.meta$name[mask][1]
     cycles_2 <- df.meta$cycles_2[mask][1]
-    df.hh <- read.table(paste("polerr2016", paste(proj, sample, "umi.histogram.txt", sep="."), sep="/"), 
+    df.hh <- read.table(paste(path, paste(proj, sample, "umi.histogram.txt", sep="."), sep="/"), 
                         header=T, sep="\t")
     df.h <- rbind(df.h, data.frame(mig.size.bin = df.hh$mig.size.bin, read.count = df.hh$read.count, 
                                    name=name, project=proj, cycles_2=cycles_2))
