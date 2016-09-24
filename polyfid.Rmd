@@ -257,8 +257,8 @@ ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) +
   geom_point(size=2, shape=21, fill="grey70") + 
   geom_text(aes(label=name), vjust=1, hjust = .3, color="red") + 
   geom_label(aes(x = 1e-6, y = 8e-5, label = lbl), hjust=-0.1, parse = TRUE)+
-  scale_x_log10(name="Error rate in experiment 1, 1/bp/cycle", limits=c(1e-6,1e-4)) + 
-  scale_y_log10(name="Error rate in experiment 2, 1/bp/cycle", limits=c(1e-6,1e-4)) +  
+  scale_x_log10(name="Error rate in experiment 1, 1/bp/cycle", limits=c(5e-7,1e-4)) + 
+  scale_y_log10(name="Error rate in experiment 2, 1/bp/cycle", limits=c(5e-7,1e-4)) +  
   theme_bw()
 ```
 
