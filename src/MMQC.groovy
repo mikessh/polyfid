@@ -35,8 +35,8 @@ def scoring = AffineGapAlignmentScoring.getNucleotideBLASTScoring()
 def alignAndUpdate = { NSequenceWithQuality nsq ->
     def aln = Aligner.alignLocalAffine(scoring, ref, nsq.sequence)
 
-    if (aln == null || (aln.sequence1Range.length() / (float) ref.size()) < minCoverage ||
-            aln.similarity() < minSimilarity) {
+    if (aln != null && (aln.sequence1Range.length() / (float) ref.size()) > minCoverage &&
+            aln.similarity() > minSimilarity) {
 
         def mutations = aln.absoluteMutations
 
