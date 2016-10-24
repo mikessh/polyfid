@@ -12,16 +12,12 @@ def ref = new NucleotideSequence("TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAAT
 
 
 byte maxQual = 40
-float minCoverage = 0.8, minSimilarity = 0.8
+float minCoverage = 0.95, minSimilarity = 0.90
 
 def fromToPositionQual = new int[maxQual + 1][][][]
 
-for (int i = maxQual; i >= 0; i--) {
-    def arr = new int[ref.size()][4][4]
-
-    for (int j = i; j <= maxQual; j++) {
-        fromToPositionQual[j] = arr // cumulative
-    }
+for (int i = 0; i <= maxQual; i++) {
+    fromToPositionQual[i] = new int[ref.size()][4][4]
 }
 
 def fastq1 = args[0], fastq2 = args[1]
@@ -30,11 +26,17 @@ def reader = new PairedFastqReader(fastq1, fastq2)
 
 def scoring = AffineGapAlignmentScoring.getNucleotideBLASTScoring()
 
+def addQual = { int qual, int pos, int from, int to ->
+    for (int j = 0; j <= qual; j++) {
+        fromToPositionQual[j][pos][from][to]++
+    }
+}
+
 def alignAndUpdate = { NSequenceWithQuality nsq ->
     def aln = Aligner.alignLocalAffine(scoring, ref, nsq.sequence)
 
-    if (aln != null && (aln.sequence1Range.length() / (float) ref.size()) > minCoverage &&
-            aln.similarity() > minSimilarity) {
+    if (aln != null && (aln.sequence2Range.length() / (float) nsq.sequence.size()) >= minCoverage &&
+            aln.similarity() >= minSimilarity) {
 
         def mutations = aln.absoluteMutations
 
@@ -52,7 +54,7 @@ def alignAndUpdate = { NSequenceWithQuality nsq ->
                     if (posInRead >= 0) {
                         byte qual = Math.min(maxQual, nsq.quality.value(posInRead))
 
-                        fromToPositionQual[qual][pos][from][to]++
+                        addQual(qual, pos, from, to)
                     }
                 }
 
@@ -68,7 +70,7 @@ def alignAndUpdate = { NSequenceWithQuality nsq ->
                     byte from = ref.codeAt(pos)
                     byte qual = Math.min(maxQual, nsq.quality.value(posInRead))
 
-                    fromToPositionQual[qual][pos][from][from]++
+                    addQual(qual, pos, from, from)
                 }
             }
         }
@@ -91,19 +93,22 @@ while ((read = reader.take()) != null) {
 println("[" + new Date().toString() + "] Finished processing $n reads, writing output")
 
 new File(args[2]).withPrintWriter { pw ->
-    pw.println("qual\tpos\tfrom\tto\tfreq")
+    pw.println("qual\tpos\tfrom\tto\tcount\tfreq")
 
     for (int i = 0; i < maxQual; i++) {
         for (int j = 0; j < ref.size(); j++) {
             for (byte k = (byte) 0; k < (byte) 4; k++) {
                 for (byte l = (byte) 0; l < (byte) 4; l++) {
-                    double count = fromToPositionQual[i][j][k][l]
-                    pw.println(i + "\t" +
-                            j + "\t" +
-                            NucleotideSequence.ALPHABET.codeToSymbol(k) + "\t" +
-                            NucleotideSequence.ALPHABET.codeToSymbol(l) + "\t" +
-                            count + "\t" +
-                            (count / (double) fromToPositionQual[i][j][k][k]))
+                    double count = fromToPositionQual[i][j][k][l],
+						   total = fromToPositionQual[i][j][k][k]
+					if (total > 0) {
+						pw.println(i + "\t" +
+								j + "\t" +
+								NucleotideSequence.ALPHABET.codeToSymbol(k) + "\t" +
+								NucleotideSequence.ALPHABET.codeToSymbol(l) + "\t" +
+								count + "\t" +
+								(count / (double) total))
+					}
                 }
             }
         }
