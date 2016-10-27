@@ -21,8 +21,11 @@ load_variant_table <- function(path, project, sample) {
 }
 
 # mutation signatures
-sign.rep <- data.frame(mutation.signature = c("A>C","A>G","A>T","C>A","C>G","C>T","G>A","G>C","G>T","T>A","T>C","T>G"),
-                       mutation.signature.rep = c("A>C,T>G","A>G,T>C","A>T,T>A","C>A,G>T","C>G,G>C","C>T,G>A","C>T,G>A","C>G,G>C","C>A,G>T","A>T,T>A","A>G,T>C","A>C,T>G"))
+sign.rep <- data.frame(mutation.signature = c("A>C","A>G","A>T","C>A","C>G","C>T","G>A",
+                                              "G>C","G>T","T>A","T>C","T>G"),
+                       mutation.signature.rep = c("A>C,T>G","A>G,T>C","A>T,T>A","C>A,G>T",
+                                                  "C>G,G>C","C>T,G>A","C>T,G>A","C>G,G>C",
+                                                  "C>A,G>T","A>T,T>A","A>G,T>C","A>C,T>G"))
 
 path <- "data/"
 df.meta <- read.table(paste(path, "metadata.txt", sep="/"), header=T, sep = "\t")
@@ -48,18 +51,23 @@ df.0$mut.split  <- NULL
 df.0$mutation.signature <- paste(df.0$mutation.from, df.0$mutation.to, sep =">")
 df.0 <- merge(df.0, sign.rep, all.x=T, all.y=F)
 
+
 # exclude bases that are not in reference
 df.0 <- subset(df.0, !(mutation.pos %in% 22:25))
 
 # shift back mutations
-df.0$mutation.pos <- ifelse(df.0$mutation.pos > 25, df.0$mutation.pos - 4, df.0$mutation.pos)
+df.0$mutation.pos <- ifelse(df.0$mutation.pos > 25, df.0$mutation.pos - 4, 
+                            df.0$mutation.pos)
 
-df.0$mutation <- with(df.0, paste("S", mutation.pos, ":", mutation.from, ">", mutation.to, sep=""))
+df.0$mutation <- with(df.0, paste("S", mutation.pos, ":", mutation.from, ">", 
+                                  mutation.to, sep=""))
   
 df <- subset(df.0, project %in% c("polerr2016-1", "polerr2016-2"))
 df.linpcr <- subset(df.0, project %in% c("polerr73", "polerr82"))
 
-template <- "TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTTGCGGCGATTTATCGTCGTCATCGTGGCGGCAGCGTGACCTATGTGTGCGGCGGCAGCCTGATTAGCCCGTGCTGG" # 4 index bases removed
+template <- paste("TAGCGTGAAGACGACAGAACCATGGGATCCATTATCGGCGGCGAATTTACCACCATTGAAAACCAGCCGTGGTTT",
+                  "GCGGCGATTTATCGTCGTCATCGTGGCGGCAGCGTGACCTATGTGTGCGGCGGCAGCCTGATTAGCCCGTGCTGG",
+                  sep="") # 4 index bases removed
 ```
 
 ## Estimating the error rates
@@ -69,10 +77,14 @@ In this section we compute linear PCR error rate from Proj73/82 and error rate i
 ```{r}
 # Compute linear PCR error rate
 
-df.er.linpcr <- ddply(df.linpcr, .(project, name), summarize, mismatches = sum(count.major), umi.count = mean(coverage))
-df.er.linpcr <- ddply(df.er.linpcr, .(name), summarize, mismatches = sum(mismatches), umi.count = round(sum(umi.count)))
+df.er.linpcr <- ddply(df.linpcr, .(project, name), summarize, mismatches = sum(count.major),
+                      umi.count = mean(coverage))
+df.er.linpcr <- ddply(df.er.linpcr, .(name), summarize, mismatches = sum(mismatches), 
+                      umi.count = round(sum(umi.count)))
 
-df.er.linpcr <- data.frame(name = df.er.linpcr$name, linpcr.er = df.er.linpcr$mismatches/df.er.linpcr$umi.count/nchar(template))
+df.er.linpcr <- data.frame(name = df.er.linpcr$name, 
+                           linpcr.er = df.er.linpcr$mismatches/df.er.linpcr$umi.count / 
+                             nchar(template))
 
 # Compute uncrorrected error rate
 
@@ -82,8 +94,9 @@ df.er <- ddply(df, .(project, name, cycles), summarize,
 df.er <- merge(df.er, df.er.linpcr, by = "name", all.x = T)
 
 df.er$err.rate <- with(df.er, mismatches / umi.count / nchar(template) / mean(cycles))
-df.er$delta <- with(df.er, sqrt(mismatches / umi.count * (1 - mismatches / umi.count) / umi.count) / 
-                 nchar(template) / mean(cycles))
+df.er$delta <- with(df.er, 
+                    sqrt(mismatches / umi.count * (1 - mismatches / umi.count) / umi.count) / 
+                      nchar(template) / mean(cycles))
 df.er$err.lb <- df.er$err.rate - 1.96 * df.er$delta
 df.er$err.ub <- df.er$err.rate + 1.96 * df.er$delta
 
@@ -91,7 +104,8 @@ df.er$err.ub <- df.er$err.rate + 1.96 * df.er$delta
 
 df.er$mismatches.corr <- with(df.er, mismatches - linpcr.er * umi.count * nchar(template))
 df.er$err.rate.corr <- with(df.er, mismatches.corr / umi.count / nchar(template) / mean(cycles))
-df.er$delta.corr <- with(df.er, sqrt(mismatches.corr / umi.count * (1 - mismatches.corr / umi.count) / umi.count) / 
+df.er$delta.corr <- with(df.er, sqrt(mismatches.corr / umi.count * 
+                                       (1 - mismatches.corr / umi.count) / umi.count) / 
                  nchar(template) / mean(cycles))
 df.er$err.lb.corr <- df.er$err.rate.corr - 1.96 * df.er$delta.corr
 df.er$err.ub.corr <- df.er$err.rate.corr + 1.96 * df.er$delta.corr
@@ -108,13 +122,16 @@ write.table(df.er, file="er.txt", quote=F, sep="\t", row.names = F)
 Substitution signature preferences:
 
 ```{r}
-base.freqs <- ddply(data.frame(base = strsplit(template, "")[[1]]), .(base), summarize, count=length(base))
+base.freqs <- ddply(data.frame(base = strsplit(template, "")[[1]]), .(base), summarize, 
+                    count=length(base))
 bases <- base.freqs$base
 base.freqs <- base.freqs$count
 names(base.freqs) <- bases
 
-df.pattern <- ddply(df, .(name, mutation.signature.rep, mutation.from), summarize, count.sum = sum(count.major))
-df.pattern <- ddply(df.pattern, .(mutation.from), transform, count.sum = count.sum / base.freqs[mutation.from])
+df.pattern <- ddply(df, .(name, mutation.signature.rep, mutation.from), summarize, 
+                    count.sum = sum(count.major))
+df.pattern <- ddply(df.pattern, .(mutation.from), transform, count.sum = count.sum / 
+                      base.freqs[mutation.from])
 df.pattern <- ddply(df.pattern, .(name), transform, freq = count.sum / sum(count.sum))
 
 ggplot(df.pattern, aes(x = mutation.signature.rep, weight = freq, 
@@ -122,21 +139,26 @@ ggplot(df.pattern, aes(x = mutation.signature.rep, weight = freq,
   xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
   scale_fill_brewer(palette = "Paired") + theme_bw()
 
-write.table(dcast(df.pattern, name ~ mutation.signature.rep, value.var = "freq", fun.aggregate = sum), 
+write.table(dcast(df.pattern, name ~ mutation.signature.rep, value.var = "freq", 
+                  fun.aggregate = sum), 
             file="pattern.txt", quote=F, sep="\t", row.names = F)
 
 # same for linpcr
 
-df.pattern.linpcr <- ddply(df.linpcr, .(name, mutation.signature, mutation.from), summarize, count.sum = sum(count.major))
-df.pattern <- ddply(df.pattern, .(mutation.from), transform, count.sum = count.sum / base.freqs[mutation.from])
-df.pattern.linpcr <- ddply(df.pattern.linpcr, .(name), transform, freq = count.sum / sum(count.sum))
+df.pattern.linpcr <- ddply(df.linpcr, .(name, mutation.signature, mutation.from), summarize, 
+                           count.sum = sum(count.major))
+df.pattern <- ddply(df.pattern, .(mutation.from), transform, 
+                    count.sum = count.sum / base.freqs[mutation.from])
+df.pattern.linpcr <- ddply(df.pattern.linpcr, .(name), transform, 
+                           freq = count.sum / sum(count.sum))
 
 ggplot(df.pattern.linpcr, aes(x = mutation.signature, weight = freq, 
                fill = name)) + geom_bar(position = position_dodge()) +
   xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
   scale_fill_brewer(palette = "Paired") + theme_bw()
 
-write.table(dcast(df.pattern.linpcr, name ~ mutation.signature, value.var = "freq", fun.aggregate = sum),
+write.table(dcast(df.pattern.linpcr, name ~ mutation.signature, value.var = "freq", 
+                  fun.aggregate = sum),
             file="pattern.lpcr.txt", quote=F, sep="\t", row.names = F)
 ```
 
@@ -156,7 +178,8 @@ df.aux$mutation <- as.character(df.aux$mutation)
 
 df.color <- merge(data.frame(mutation = rownames(mat.profile)), df.aux)
 
-df.color.legend <- data.frame(colors = brewer.pal(6, "Paired"), signature = levels(df.color$signature))
+df.color.legend <- data.frame(colors = brewer.pal(6, "Paired"), 
+                              signature = levels(df.color$signature))
 
 df.color <- merge(df.color, df.color.legend)
 
@@ -181,29 +204,6 @@ legend(y=1.2, x=.85, xpd=TRUE,
     )
 ```
 
-By position:
-
-```{r}
-mat.profile <- dcast(df, name_proj ~ mutation.pos, value.var = "freq", fun.aggregate = sum)
-rownames(mat.profile) <- mat.profile[,1]
-mat.profile[,1] <- NULL
-mat.profile <- t(as.matrix(mat.profile))
-mat.profile[is.na(mat.profile)] <- 0
-
-n <- nchar(template)
-rowcolor <- colorRampPalette(colors = c("#f7f7f7", "#2166ac"))(n)
-names(rowcolor) <- 1:n
-
-rowDend <- hclust(dist(mat.profile))
-colDend <- hclust(as.dist((1-cor(mat.profile))/2), method = "ward")
-
-heatmap.2(log10(mat.profile), col=c("#08306b", colorpanel(99, "#2166ac", "grey", "#b2182b")),
-          dendrogram = "both", RowSideColors = rowcolor[rownames(mat.profile)], breaks = seq(-6,-2,length.out = 101),
-          Rowv = as.dendrogram(rowDend), 
-          Colv = as.dendrogram(colDend),
-          density.info = "none", trace="none")
-```
-
 Recurrent errors
 
 ```{r}
@@ -225,7 +225,8 @@ df.1 <- ddply(df.1, .(name), transform,
 ggplot() + 
   geom_point(data=subset(df.1, !miss), aes(x=freq.x, y=freq.y), shape=21, fill="grey", alpha=0.5) + 
   geom_smooth(data=subset(df.1, !miss & name != "Phusion"), aes(x=freq.x, y=freq.y), method="lm") + 
-  geom_point(data=subset(df.1, miss), aes(x=freq.x, y=freq.y), shape=21, color="red", fill="grey", alpha=0.5) + 
+  geom_point(data=subset(df.1, miss), aes(x=freq.x, y=freq.y), shape=21, color="red", fill="grey",
+             alpha=0.5) + 
   facet_wrap(~name) +
   scale_x_log10("Frequency in experiment 1", limits=c(1e-6,1e-2), breaks = c(1e-5, 1e-4, 1e-3)) + 
   scale_y_log10("Frequency in experiment 2", limits=c(1e-6,1e-2), breaks = c(1e-5, 1e-4, 1e-3)) + 
@@ -236,8 +237,10 @@ Frequency distribution of individual mutations, grouped by their pattern.
 
 ```{r}
 df.1 <- subset(df, project %in% c("polerr2016-1", "polerr2016-2"))
-df.1 <- ddply(df.1, .(name, mutation.pos, mutation.signature.rep), summarize, count.major=sum(count.major), coverage=sum(coverage))
-df.mean.err <- ddply(df.1, .(name), summarize, mean.err.rate = sum(count.major) / mean(coverage) / nchar(template))
+df.1 <- ddply(df.1, .(name, mutation.pos, mutation.signature.rep), summarize, count.major=sum(count.major), 
+              coverage=sum(coverage))
+df.mean.err <- ddply(df.1, .(name), summarize, mean.err.rate = sum(count.major) / mean(coverage) / 
+                       nchar(template))
 # ^ this one is the gloal mean
 
 df.1 <- merge(df.1, df.mean.err, all.x=T, all.y=F)
@@ -290,7 +293,8 @@ df.qq.corr <- ddply(df.qq.2, .(qual, name), summarize, r = cor(count, count.pcr)
 ggplot(df.qq.corr, aes(x=qual, color=name, y = r)) + 
   geom_line() + geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
   scale_color_brewer("PCR assay", palette = "Paired") +
-  scale_y_continuous("Pearson R", limits = c(-0.35, 0.35), breaks = c(-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3)) +
+  scale_y_continuous("Pearson R", limits = c(-0.35, 0.35), 
+                     breaks = c(-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3)) +
   xlab("Quality threshold") +
   theme_bw()
 ```
@@ -350,27 +354,13 @@ ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) +
   theme_bw()
 ```
 
-Error distribution by position
-
-```{r}
-df.pos <- ddply(df, .(name, mutation.pos, mutation.from, mutation.signature.rep), 
-                summarize, count = sum(count.major), freq = sum(count.major) / coverage[1])
-
-ggplot(df.pos, aes(x = mutation.pos, y = freq, color = mutation.signature.rep)) + 
-  geom_line() + geom_point(shape=21, fill="white") + 
-  scale_color_brewer("Substituted base", palette = "Paired") +
-  xlab("Position on template") + scale_y_log10("Error rate") +
-  facet_grid(name~mutation.signature.rep, scales="free_y") +
-  theme_bw()
-
-```
-
 UMI coverage histogram
 
 ```{r}
 df.meta <- subset(df.meta, project %in% c("polerr2016-1", "polerr2016-2"))
 
-df.h <- data.frame(mig.size.bin = integer(), read.count = integer(), name=character(), project=character())
+df.h <- data.frame(mig.size.bin = integer(), read.count = integer(), name=character(), 
+                   project=character())
 
 for (proj in unique(df.meta$project)) {
   for (sample in unique(subset(df.meta, project == proj)$sample)) {
@@ -411,9 +401,24 @@ lbl<-as.character(as.expression(eq))
 ggplot()+
 geom_label(aes(x = 22, y = 12, label = lbl), hjust=-0.1, parse = TRUE)+
 stat_smooth(data=df.o, aes(cycles_2, peak), method=lm, color="black", fill="grey80") + 
-geom_jitter(data=df.o, aes(cycles_2, peak, fill=name), size=3, width=0.3, height=0.3, color="black", shape=21) +
+geom_jitter(data=df.o, aes(cycles_2, peak, fill=name), size=3, width=0.3, height=0.3, color="black", 
+            shape=21) +
 scale_x_continuous(name="2nd PCR cycles", breaks=10:30) +
 scale_y_continuous(expression('log'[2]~'characteristic MIG size'), breaks=2:20) +
 scale_fill_brewer(name  ="Polymerase", palette = "Paired") +
 theme_bw()
+```
+
+Error distribution by position
+
+```{r}
+df.pos <- ddply(df, .(name, mutation.pos, mutation.from, mutation.signature.rep), 
+                summarize, count = sum(count.major), freq = sum(count.major) / coverage[1])
+
+ggplot(df.pos, aes(x = mutation.pos, y = freq, color = mutation.signature.rep)) + 
+  geom_line() + geom_point(shape=21, fill="white") + 
+  scale_color_brewer("Substituted base", palette = "Paired") +
+  xlab("Position on template") + scale_y_log10("Error rate") +
+  facet_grid(name~mutation.signature.rep, scales="free_y") +
+  theme_bw()
 ```
