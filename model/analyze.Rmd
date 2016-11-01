@@ -1,0 +1,63 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load data
+
+```{r}
+df <- data.frame()
+
+for (proj in c(73, 82)) {
+  for (sample in c("encyclo", "kappa-hf-taq", "phusion", "sd-hs", "snp-detect",
+                   "taq-hs", "tersus", "tersus-snp-buff", "truseq", "velox")) {
+    .df <- read.table(paste("polerr", proj, ".", sample, ".variant.caller.txt", sep=""), 
+                               header=T, sep="\t", stringsAsFactors = F)
+    .df$proj <- proj
+    .df$sample <- sample
+    df <- rbind(df, .df)
+  }
+}
+
+df <- subset(df, freq < 0.5 & !grepl("D", mutation) & !grepl("I", mutation) & global.est == 0)
+
+df$mut.split <- sapply(df$mutation, function(x) strsplit(as.character(x),"[S:>]"))
+df$mutation.pos <- as.integer(sapply(df$mut.split, function(x) x[2]))
+df$mutation.from <- sapply(df$mut.split, function(x) x[3])
+df$mutation.to <- sapply(df$mut.split, function(x) x[4])
+df$mut.split  <- NULL
+```
+
+Model estimates
+
+```{r}
+library(ggplot2)
+
+ggplot(df, aes(x=freq, y=error.rate)) + 
+  geom_point(aes(color=sample), shape=21) + 
+  geom_smooth(data=subset(df, freq > 0), method="lm") +
+  scale_x_log10(limits=c(1e-6, 1e-2)) + 
+  scale_y_log10(limits=c(1e-6, 1e-2)) + facet_grid(mutation.from~mutation.to) +
+  theme_bw()
+
+with(subset(df, freq > 0), cor(freq, error.rate, method = "spearman"))
+```
+
+Try fit GLM
+
+```{r}
+mdl <- glm(count ~ coverage + error.rate + fdr + recall +
+             I(1.0 - q.filtered.read.fraction) + mutation.from:mutation.to - 1, 
+             df, family=poisson())
+#mdl <- glm(count ~ coverage + error.rate, df, family=poisson())
+summary(mdl)
+
+df$count.fit <- fitted.values(mdl)
+
+ggplot(df, aes(x=count, y=count.fit)) + geom_point() + geom_density2d() +
+  scale_x_log10(limits=c(1, 1000)) + scale_y_log10(limits=c(1, 1000))
+```
