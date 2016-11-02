@@ -23,7 +23,7 @@ for (proj in c(73, 82)) {
   }
 }
 
-df <- subset(df, freq < 0.5 & !grepl("D", mutation) & !grepl("I", mutation) & global.est == 0)
+df <- subset(df, freq < 0.5 & !grepl("D", mutation) & !grepl("I", mutation) & global.est == 0 & coverage > 0)
 
 df$mut.split <- sapply(df$mutation, function(x) strsplit(as.character(x),"[S:>]"))
 df$mutation.pos <- as.integer(sapply(df$mut.split, function(x) x[2]))
@@ -42,6 +42,7 @@ ggplot(df, aes(x=freq, y=error.rate)) +
   geom_smooth(data=subset(df, freq > 0), method="lm") +
   scale_x_log10(limits=c(1e-6, 1e-2)) + 
   scale_y_log10(limits=c(1e-6, 1e-2)) + facet_grid(mutation.from~mutation.to) +
+  scale_color_brewer(palette = "Paired") +
   theme_bw()
 
 with(subset(df, freq > 0), cor(freq, error.rate, method = "spearman"))
@@ -50,14 +51,22 @@ with(subset(df, freq > 0), cor(freq, error.rate, method = "spearman"))
 Try fit GLM
 
 ```{r}
-mdl <- glm(count ~ coverage + error.rate + fdr + recall +
-             I(1.0 - q.filtered.read.fraction) + mutation.from:mutation.to - 1, 
+mdl <- glm(count ~ I(log(coverage)) + I(log(error.rate)) +
+             I(log(1.0 - q.filtered.read.fraction)), 
              df, family=poisson())
-#mdl <- glm(count ~ coverage + error.rate, df, family=poisson())
+#mdl <- glm(count ~ I(log(coverage)) + 
+#             I(log((1.0-minor.fdr) * minor.count.local / coverage)) +
+#             I(log(read.fraction.in.minors)) +
+#             I(log(1.0 - q.filtered.read.fraction)), 
+#           df, family=poisson())
 summary(mdl)
 
 df$count.fit <- fitted.values(mdl)
 
-ggplot(df, aes(x=count, y=count.fit)) + geom_point() + geom_density2d() +
-  scale_x_log10(limits=c(1, 1000)) + scale_y_log10(limits=c(1, 1000))
+ggplot(df, aes(x=count, y=count.fit)) + geom_point(aes(color=sample)) +
+  geom_smooth(method="lm") +
+  scale_x_log10(limits=c(1, 1000)) + scale_y_log10(limits=c(1, 1000)) +
+  facet_grid(mutation.from~mutation.to) +
+  scale_color_brewer(palette = "Paired") +
+  theme_bw()
 ```
