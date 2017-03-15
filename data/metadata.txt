@@ -1,37 +1,41 @@
 project	sample	name	cycles	cycles_2	dna_2
 polerr82	encyclo	Encyclo	20	14	0.02
-polerr82	velox	Velox	20	14	0.02
-polerr82	tersus	Tersus	20	14	0.02
-polerr82	tersus-snp-buff	Tersus-SNP-buffer	20	12	0.02
+polerr82	velox	KTN 	20	14	0.02
+polerr82	tersus	Tersus-buffer2	20	14	0.02
+polerr82	tersus-snp-buff	Tersus-buffer1	20	12	0.02
 polerr82	snp-detect	SNP-detect	20	17	0.02
-polerr82	sd-hs	SD-HS	20	15	0.02
+polerr82	sd-hs	SD	20	15	0.02
 polerr82	kappa-hf-taq	Kappa HF	20	11	0.1
+polerr82	phusion	Phusion	25	18	0.1
 polerr82	truseq	TruSeq	20	17	0.02
 polerr82	taq-hs	Taq-HS	20	15	0.02
 polerr73	encyclo	Encyclo	20	14	0.02
-polerr73	velox	Velox	20	14	0.02
-polerr73	tersus	Tersus	20	14	0.02
-polerr73	tersus-snp-buff	Tersus-SNP-buffer	20	14	0.02
+polerr73	velox	KTN 	20	14	0.02
+polerr73	tersus	Tersus-buffer2	20	14	0.02
+polerr73	tersus-snp-buff	Tersus-buffer1	20	14	0.02
 polerr73	snp-detect	SNP-detect	20	17	0.02
-polerr73	sd-hs	SD-HS	20	15	0.02
+polerr73	sd-hs	SD	20	15	0.02
 polerr73	kappa-hf-taq	Kappa HF	20	11	0.1
+polerr73	phusion	Phusion	25	18	0.1
 polerr73	truseq	TruSeq	20	17	0.02
 polerr73	taq-hs	Taq-HS	20	15	0.02
 polerr2016-1	encyclo	Encyclo	20	22	NA
-polerr2016-1	velox	Velox	20	22	NA
-polerr2016-1	tersus	Tersus	20	24	NA
-polerr2016-1	tersus-snp-buff	Tersus-SNP-buffer	20	22	NA
+polerr2016-1	velox	KTN 	20	22	NA
+polerr2016-1	tersus	Tersus-buffer2	20	24	NA
+polerr2016-1	tersus-snp-buff	Tersus-buffer1	20	22	NA
 polerr2016-1	snp-detect	SNP-detect	20	25	NA
-polerr2016-1	sd-hs	SD-HS	20	24	NA
+polerr2016-1	sd-hs	SD	20	24	NA
 polerr2016-1	kappa-hf-taq	Kappa HF	20	25	NA
+polerr2016-1	phusion	Phusion	25	29	NA
 polerr2016-1	truseq	TruSeq	20	25	NA
 polerr2016-1	taq-hs	Taq-HS	20	25	NA
 polerr2016-2	taq-hs	Taq-HS	20	25	NA
 polerr2016-2	encyclo	Encyclo	20	22	NA
-polerr2016-2	velox	Velox	20	23	NA
+polerr2016-2	velox	KTN 	20	23	NA
 polerr2016-2	snp-detect	SNP-detect	20	24	NA
-polerr2016-2	tersus	Tersus	20	25	NA
-polerr2016-2	sd-hs	SD-HS	20	22	NA
+polerr2016-2	tersus	Tersus-buffer2	20	25	NA
+polerr2016-2	sd-hs	SD	20	22	NA
 polerr2016-2	kappa-hf-taq	Kappa HF	20	22	NA
-polerr2016-2	tersus-snp-buff	Tersus-SNP-buffer	20	22	NA
+polerr2016-2	phusion	Phusion	25	29	NA
+polerr2016-2	tersus-snp-buff	Tersus-buffer1	20	22	NA
 polerr2016-2	truseq	TruSeq	20	25	NA

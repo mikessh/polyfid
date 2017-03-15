@@ -134,10 +134,15 @@ df.pattern <- ddply(df.pattern, .(mutation.from), transform, count.sum = count.s
                       base.freqs[mutation.from])
 df.pattern <- ddply(df.pattern, .(name), transform, freq = count.sum / sum(count.sum))
 
-ggplot(df.pattern, aes(x = mutation.signature.rep, weight = freq, 
+p1 = ggplot(subset(df.pattern, name != "Phusion"), aes(x = mutation.signature.rep, weight = freq, 
                fill = name)) + geom_bar(position = position_dodge()) +
   xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
-  scale_fill_brewer(palette = "Paired") + theme_bw()
+  scale_fill_brewer("Sample", palette = "Paired") + theme_bw()
+
+pdf("figures/fig2a.pdf")
+p1
+dev.off()
+p1
 
 write.table(dcast(df.pattern, name ~ mutation.signature.rep, value.var = "freq", 
                   fun.aggregate = sum), 
@@ -152,10 +157,15 @@ df.pattern <- ddply(df.pattern, .(mutation.from), transform,
 df.pattern.linpcr <- ddply(df.pattern.linpcr, .(name), transform, 
                            freq = count.sum / sum(count.sum))
 
-ggplot(df.pattern.linpcr, aes(x = mutation.signature, weight = freq, 
+p2 = ggplot(subset(df.pattern.linpcr, name != "Phusion"), aes(x = mutation.signature, weight = freq, 
                fill = name)) + geom_bar(position = position_dodge()) +
   xlab("Substitution signature") + scale_y_continuous("Share of errors", expand=c(0,0)) +
-  scale_fill_brewer(palette = "Paired") + theme_bw()
+  scale_fill_brewer(palette = "Paired", guide = F) + theme_bw()
+
+pdf("figures/fig2b.pdf")
+p2
+dev.off()
+p2
 
 write.table(dcast(df.pattern.linpcr, name ~ mutation.signature, value.var = "freq", 
                   fun.aggregate = sum),
@@ -186,8 +196,14 @@ df.color <- merge(df.color, df.color.legend)
 rowcolor <- as.character(df.color$colors)
 names(rowcolor) <- df.color$mutation
 
+mat.profile = as.data.frame(mat.profile)
+mat.profile[,"Phusion-1"] = NULL
+mat.profile[,"Phusion-2"] = NULL
+mat.profile = as.matrix(mat.profile)
+
 rowDend <- hclust(dist(mat.profile))
 colDend <- hclust(as.dist((1-cor(mat.profile))/2), method = "ward")
+
 
 heatmap.2(log10(mat.profile), col=c("#08306b", colorpanel(99, "#2166ac", "grey", "#b2182b")),
           dendrogram = "both", RowSideColors = rowcolor, breaks = seq(-6,-2,length.out = 101),
@@ -195,13 +211,28 @@ heatmap.2(log10(mat.profile), col=c("#08306b", colorpanel(99, "#2166ac", "grey",
           Colv = as.dendrogram(colDend),
           density.info = "none", trace="none")
 
-legend(y=1.2, x=.85, xpd=TRUE,     
+legend(x="topright", xpd=TRUE,     
     legend = df.color.legend$signature,
     col = df.color.legend$colors, 
     lty= 1,             
     lwd = 5,           
     cex=.7
     )
+
+postscript("figures/fig2c.ps", horizontal = F)
+heatmap.2(log10(mat.profile), col=c("#08306b", colorpanel(99, "#2166ac", "grey", "#b2182b")),
+          dendrogram = "both", RowSideColors = rowcolor, breaks = seq(-6,-2,length.out = 101),
+          Rowv = as.dendrogram(rowDend), 
+          Colv = as.dendrogram(colDend),
+          density.info = "none", trace="none")
+legend(x="topright", xpd=TRUE,     
+    legend = df.color.legend$signature,
+    col = df.color.legend$colors, 
+    lty= 1,             
+    lwd = 5,           
+    cex=.7
+    )
+dev.off()
 ```
 
 Recurrent errors
@@ -222,7 +253,9 @@ df.1 <- ddply(df.1, .(name), transform,
               freq.x = ifelse(is.na(freq.x), 1/mean(coverage.x, na.rm = T), freq.x),
               freq.y = ifelse(is.na(freq.y), 1/mean(coverage.y, na.rm = T), freq.y))
 
-ggplot() + 
+df.1 = subset(df.1, name != "Phusion")
+
+p3 = ggplot() + 
   geom_point(data=subset(df.1, !miss), aes(x=freq.x, y=freq.y), shape=21, fill="grey", alpha=0.5) + 
   geom_smooth(data=subset(df.1, !miss & name != "Phusion"), aes(x=freq.x, y=freq.y), method="lm") + 
   geom_point(data=subset(df.1, miss), aes(x=freq.x, y=freq.y), shape=21, color="red", fill="grey",
@@ -231,6 +264,11 @@ ggplot() +
   scale_x_log10("Frequency in experiment 1", limits=c(1e-6,1e-2), breaks = c(1e-5, 1e-4, 1e-3)) + 
   scale_y_log10("Frequency in experiment 2", limits=c(1e-6,1e-2), breaks = c(1e-5, 1e-4, 1e-3)) + 
   theme_bw()
+
+pdf("figures/fig3.pdf")
+p3
+dev.off()
+p3
 ```
 
 ## Indibidual mutations
@@ -247,13 +285,20 @@ df.mean.err <- ddply(df.1, .(name), summarize, mean.err.rate = sum(count.major) 
 
 df.1 <- merge(df.1, df.mean.err, all.x=T, all.y=F)
 
-ggplot(df.1) + 
+df.1 = subset(df.1, name != "Phusion")
+
+p4 = ggplot(df.1) + 
   geom_histogram(aes(x = count.major / coverage, fill = mutation.signature.rep)) + 
   geom_linerange(aes(x = mean.err.rate, ymin = 0, ymax=50), linetype = "dashed", color="black") +
   scale_fill_brewer("Substitution signature", palette = "Paired") +
   scale_x_log10("Error frequency") + 
-  scale_y_continuous("", expand=c(0,0)) + facet_wrap(~name) + theme_bw()
-  #facet_wrap(~name, scales = "free_y") + theme_bw()
+  scale_y_continuous("", expand=c(0,0)) + facet_wrap(~name) + theme_bw() +
+  theme(legend.position="bottom")
+
+pdf("figures/fig4.pdf")
+p4
+dev.off()
+p4
 ```
 
 ## Sequence quality and error patterns
@@ -272,12 +317,17 @@ df.qq.1 <- merge(df.qq, df.qq.cov)
 df.qq.1 <- ddply(subset(df.qq.1, from != to), .(mutation.signature, qual), summarize, 
                  count = sum(count), freq = count / total[1])
 
-ggplot(df.qq.1, aes(x=qual, y=freq, color=mutation.signature)) +
+p5 = ggplot(df.qq.1, aes(x=qual, y=freq, color=mutation.signature)) +
   geom_smooth(fill="grey80") + geom_point() + 
   scale_color_brewer("Substitution type", palette = "Paired") +
   scale_y_log10("Error rate") +
   scale_x_continuous("Quality threshold") +
   theme_bw()
+
+pdf("figures/fig5a.pdf")
+p5
+dev.off()
+p5
 ```
 
 Correlation across polymerase types.
@@ -292,13 +342,20 @@ df.qq.2 <- merge(df.qq, df.linpcr.2)
 
 df.qq.corr <- ddply(df.qq.2, .(qual, name), summarize, r = cor(count, count.pcr))
 
-ggplot(df.qq.corr, aes(x=qual, color=name, y = r)) + 
+df.qq.corr = subset(df.qq.corr, name != "Phusion")
+
+p6 = ggplot(df.qq.corr, aes(x=qual, color=name, y = r)) + 
   geom_line() + geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
-  scale_color_brewer("PCR assay", palette = "Paired") +
+  scale_color_brewer("Sample", palette = "Paired") +
   scale_y_continuous("Pearson R", limits = c(-0.35, 0.35), 
                      breaks = c(-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3)) +
   xlab("Quality threshold") +
   theme_bw()
+
+pdf("figures/fig5b.pdf")
+p6
+dev.off()
+p6
 ```
 
 Clustering TruSeq, Q10 and Q35 error profiles.
@@ -322,6 +379,11 @@ mat.qq.clust[is.na(mat.qq.clust)] <- 0
 
 heatmap.2(mat.qq.clust, dendrogram = "column",  labRow = FALSE, scale="col",
           col=colorpanel(100, "#08306b", "grey", "#b30000"), tracecol="black", linecol = "white")
+
+postscript("figures/fig5c.ps", horizontal = F)
+heatmap.2(mat.qq.clust, dendrogram = "column",  labRow = FALSE, scale="col",
+          col=colorpanel(100, "#08306b", "grey", "#b30000"), tracecol="black", linecol = "white")
+dev.off()
 ```
 
 ## Sequence context
@@ -343,7 +405,7 @@ df.kmer.posnorm = df.kmer.posnorm %>%
   dplyr::group_by(name, mut.from) %>%
   dplyr::mutate(freq.norm = scale(freq)[,1])
 
-ggplot(df.kmer.posnorm, aes(x = mut.pos, y = freq.norm)) +
+p10=ggplot(df.kmer.posnorm, aes(x = mut.pos, y = freq.norm)) +
   #geom_line(aes(group = name)) + 
   geom_smooth(color = "black") +
   geom_point(aes(color = name), shape = 21) +
@@ -352,38 +414,68 @@ ggplot(df.kmer.posnorm, aes(x = mut.pos, y = freq.norm)) +
   scale_color_brewer("PCR assay", palette = "Paired") +
   theme_bw()
 
+pdf("figures/fig6a.pdf")
+p10
+dev.off()
+p10
+
 cor.test(df.kmer.posnorm$mut.pos, df.kmer.posnorm$freq.norm, method = "spearman")
 ```
 
 K-mer model
 
 ```{r}
+library(scales)
+
 df.kmer.pos = df.kmer %>%
   dplyr::group_by(name, mut.pos, mut.from, region.gc) %>%
   dplyr::summarize(freq.pos = sum(count) / sum(coverage))
 
-fit = aov(log10(freq.pos) ~ mut.pos + region.gc + name + mut.from, df.kmer.pos)
+df.kmer.pos$mut.pos = factor(as.integer(df.kmer.pos$mut.pos / 10))
+
+fit = lm(log10(freq.pos) ~ mut.pos + region.gc + name * mut.from, df.kmer.pos)
 af <- anova(fit)
 afss <- af$"Sum Sq"
 afss <- cbind(af,PctExp=afss/sum(afss)*100)
 print(afss)
 
-afss$param <- c("Position", "GC content in 9bp window", "PCR assay", "Mutated base", "Unexplained")
+afss$param <- factor(c("Position (15bp bin)", "GC content in 15bp window", "PCR assay", "Nucleotide", "PCR assay nucleotide preference", "Unexplained"))
 
-ggplot(afss, aes(x = "", y = PctExp, fill = param)) +
-  geom_bar(stat = "identity", color = "black") +
-  coord_polar(theta = "y") + xlab("") + ylab("") +
-  scale_fill_manual("Parameter", values = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "grey")) + 
-  theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+afss = afss %>%
+  dplyr::arrange(param) %>%
+  dplyr::mutate(label_pos = 100 - cumsum(PctExp) + PctExp / 2)
+
+p11 = ggplot(afss, aes(x = "", y = PctExp, fill = param)) +
+  geom_bar(stat = "identity", color = "black", size = 0.3) +
+  geom_text(aes(x = 1.25, y = label_pos, label = percent(PctExp/100)), size = 4) +
+  coord_polar(theta = "y") + 
+  xlab("") + ylab("") +
+  scale_fill_manual("Parameter", values = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "grey")) + 
+  theme_bw() + 
+  theme(axis.text.x=element_blank(), panel.border = element_blank(),
+        axis.ticks = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position="bottom")
+
+pdf("figures/fig6b.pdf")
+p11
+dev.off()
+p11
 
 df.kmer.pos$freq.mdl = predict(fit, df.kmer.pos, type="response")
 
-ggplot(df.kmer.pos, aes(x = 10^freq.mdl, y = freq.pos)) +
-  geom_point() +
+p12 = ggplot(df.kmer.pos, aes(x = 10^freq.mdl, y = freq.pos)) +
+  geom_density2d() +
+  geom_point(shape=21) +
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
-  scale_x_log10("Predicted error frequency", limits = c(1e-6, 1e-3)) +
-  scale_y_log10("Observed error frequency", limits = c(1e-6, 1e-3)) +
+  scale_x_log10("Predicted error rate", limits = c(1e-6, 1e-3)) +
+  scale_y_log10("Observed error rate", limits = c(1e-6, 1e-3)) +
   theme_bw() 
+
+pdf("figures/fig6c.pdf")
+p12
+dev.off()
+p12
+
+cor.test(df.kmer.pos$freq.mdl, df.kmer.pos$freq.pos)
 ```
 
 
@@ -407,7 +499,7 @@ eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(R)~"="~r,
           r = format(sqrt(summary(m)$r.squared), digits = 2)))
 lbl<-as.character(as.expression(eq))
 
-ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) + 
+p7 = ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) + 
   geom_errorbarh(aes(xmax=replica1.x+1.96*replica1.y,xmin=replica1.x-1.96*replica1.y)) +
   geom_errorbar(aes(ymax=replica2.x+1.96*replica2.y,ymin=replica2.x-1.96*replica2.y)) +
   geom_smooth(method = "lm", color="black", fill="grey80", fullrange = T) + 
@@ -417,21 +509,26 @@ ggplot(df.er.cast, aes(x=replica1.x, y=replica2.x)) +
   scale_x_log10(name="Error rate in experiment 1, 1/bp/cycle", limits=c(5e-7,1e-4)) + 
   scale_y_log10(name="Error rate in experiment 2, 1/bp/cycle", limits=c(5e-7,1e-4)) +  
   theme_bw()
+
+pdf("figures/figS1.pdf")
+p7
+dev.off()
+p7
 ```
 
 UMI coverage histogram
 
 ```{r}
-df.meta <- subset(df.meta, project %in% c("polerr2016-1", "polerr2016-2"))
+df.meta.1 <- subset(df.meta, project %in% c("polerr2016-1", "polerr2016-2"))
 
 df.h <- data.frame(mig.size.bin = integer(), read.count = integer(), name=character(), 
                    project=character())
 
-for (proj in unique(df.meta$project)) {
-  for (sample in unique(subset(df.meta, project == proj)$sample)) {
-    mask <- which(df.meta$sample == sample & df.meta$project == proj)
-    name <- df.meta$name[mask][1]
-    cycles_2 <- df.meta$cycles_2[mask][1]
+for (proj in unique(df.meta.1$project)) {
+  for (sample in unique(subset(df.meta.1, project == proj)$sample)) {
+    mask <- which(df.meta.1$sample == sample & df.meta.1$project == proj)
+    name <- df.meta.1$name[mask][1]
+    cycles_2 <- df.meta.1$cycles_2[mask][1]
     df.hh <- read.table(paste(path, paste(proj, sample, "umi.histogram.txt", sep="."), sep="/"), 
                         header=T, sep="\t")
     df.h <- rbind(df.h, data.frame(mig.size.bin = df.hh$mig.size.bin, read.count = df.hh$read.count, 
@@ -439,14 +536,20 @@ for (proj in unique(df.meta$project)) {
   }
 }
 
-ggplot(df.h) + 
+p8 = ggplot(df.h) + 
   geom_rect(aes(xmin=1, xmax=5, ymin=0, ymax=Inf), fill="grey") +
   geom_line(aes(x=mig.size.bin, y=read.count, color=project, linetype=name, 
                 group = interaction(project, name)), size=1) + 
-  scale_x_log10("UMI coverage", limits = c(1,1e4), expand=c(0,0)) + 
+  scale_x_log10("UMI coverage", limits = c(1,1e5), expand=c(0,0)) + 
   scale_y_continuous("Number of reads in UMIs", expand=c(0,0), limits=c(0,7.5e6)) +
-  scale_color_brewer(palette = "Set1") +
+  scale_color_brewer("Experiment", palette = "Set1") +
+  scale_linetype("Sample") +
   theme_bw()
+
+pdf("figures/figS2.pdf")
+p8
+dev.off()
+p8
 ```
 
 Coverage and PCR cycles
@@ -464,13 +567,18 @@ eq <- substitute(italic(R)~"="~r*","~~italic(P)~"="~p,
      ))
 lbl<-as.character(as.expression(eq))
 
-ggplot()+
-geom_label(aes(x = 22, y = 10, label = lbl), hjust=-0.1, parse = TRUE)+
+p9 = ggplot()+
+geom_label(aes(x = 22, y = 12, label = lbl), hjust=-0.1, parse = TRUE)+
 stat_smooth(data=df.o, aes(cycles_2, peak), method=lm, color="black", fill="grey85") + 
 geom_beeswarm(data=df.o, aes(x=cycles_2, y=peak, group = interaction(name,cycles_2), color=name), groupOnX=T, 
             shape=45, size = 10) +
 scale_x_continuous(name="2nd PCR cycles", breaks=10:30) +
 scale_y_continuous(expression('log'[2]~'characteristic MIG size'), breaks=2:20) +
-scale_color_brewer(name  ="Polymerase", palette = "Paired") +
+scale_color_brewer(name  ="Sample", palette = "Paired") +
 theme_bw()
+
+pdf("figures/figS3.pdf")
+p9
+dev.off()
+p9
 ```

@@ -27,6 +27,10 @@ def inputFileNamesMap = [
         "data/${p2}.velox.variant.caller.txt"          : "Velox"
 ]
 
+def getProject = { String str ->
+    str.split('[/.]')[1]
+}
+
 def parseMutation = { String str ->
     def strSplit = str[1..-1].split("[:>]")
 
@@ -93,7 +97,7 @@ def getKmerBothStrands = { String kmer ->
 }
 
 new File(outputFileName).withPrintWriter { pw ->
-    pw.println("reference\tname\tmut.pos\tmut.from\tregion.gc\tcount\tcoverage")
+    pw.println("project\treference\tname\tmut.pos\tmut.from\tregion.gc\tcount\tcoverage")
     inputFileNamesMap.each { inputFileEntry ->
         def inputFileName = inputFileEntry.key
         println inputFileName
@@ -105,12 +109,13 @@ new File(outputFileName).withPrintWriter { pw ->
                 if (mut && (count.toDouble() / coverage.toDouble() < 0.25)) {
                     def refSeq = referenceMap[ref]
 
-                    ([[4, 4]]).each { offsets ->
+                    ([[7, 7]]).each { offsets ->
                         def kmer = getKmer(refSeq, mut.from, mut.pos, offsets[0], offsets[1])
 
-                        def kmer2 = kmer[0..2] + "N" + kmer[4..-1]
+                        def kmer2 = kmer[0..5] + "N" + kmer[7..-1]
 
-                        pw.println([ref,
+                        pw.println([getProject(inputFileName),
+                                    ref,
                                     inputFileEntry.value,
                                     mut.pos,
                                     mut.from,
@@ -144,7 +149,8 @@ new File(outputFileName).withPrintWriter { pw ->
 
                         def kmerExt2 = kmer[0] + "N" + kmer[2]
 
-                        pw.println([ref,
+                        pw.println([getProject(inputFileName),
+				    ref,
                                     inputFileEntry.value,
                                     mut.pos,
                                     mut.from,
